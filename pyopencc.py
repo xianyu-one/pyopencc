@@ -2,17 +2,17 @@
 #coding:utf-8
 #version:3.8.5
 
-import os,chardet,opencc
+import os,opencc,sys
 
-_check = ''   #用于比较用户输入是否为空
+_check = ''
 
-def findAllFile(base):  #用于遍历文件夹
-    for root, ds, fs in os.walk(base):
+def findallfile(path):
+    for root, ds, fs in os.walk(path):
         for f in fs:
             fullname = os.path.join(root, f)
             yield fullname
 
-def decide_path(path):    #用于检测输入路径是否带有/
+def decide_path(path):
     path_back = ''
     if path.endswith('/'):
         path_back = path
@@ -21,52 +21,66 @@ def decide_path(path):    #用于检测输入路径是否带有/
         path_back = path + '/'
         return path_back
 
-def decide_extension(extension):   #用于检测输入文件后缀是否带有.
+def decide_extension(extension):
     extension_back = ''
-    if extension.sitemtswith('.'):
+    if extension.startswith('.'):
         extension_back = extension
         return extension_back
     else:
         extension_back = '.' + extension
         return extension_back
 
-def read_file(path):
-    with open(path,'rb') as f:
-        back = f.read()
-        return(back)
-
-def write_file(path,read_):
-    with open(path,'wb+') as f:
-        f.write(read_)
-
-def check_path_extension(path_original,extension_original):   #检测用户输入文件夹路径以及文件后缀
+def check_path_extension(path_original,extension_original):
     path = decide_path(path_original)
     if extension_original == _check:
         extension = extension_original
     else:
         extension = decide_extension(extension_original)
     back = {'path':path, 'extension':extension}
-    return(back)
+    return back
 
-def pyopencc(path,extension,opencc_cc):
-    read_data = read_file(path)
-    cc = opencc(opencc_cc)
-    data_new = cc.convert(read_data)
-    write_file(path,data_new)
+def read_data(path):
+    result = []
+    with open(path,'r') as f:
+        for line in f:
+            result.append(line.strip('\n'))
+        return result
+
+def write_data(path,data):
+    with open(path,'w') as f:
+        for i in data:
+            f.write(str(i) + '\n')
+
+def pyopencc(data,opencc_cc):
+    result = []
+    cc = opencc.OpenCC(opencc_cc)
+    for aline in data:
+        data_new = cc.convert(aline)
+        result.append(data_new)
+    return result
 
 def pyopencc_body(path_original,extension_original,opencc_cc):
     path_extension_back = check_path_extension(path_original,extension_original)
-    path = str(path_extension_back['path'])      #将path定义为正确的文件路径格式
-    print('文件夹路径为：' + path)
-    extension = str(path_extension_back['extension'])      #将extension定义为正确的文件后缀格式
-    print('文件后缀为：' + extension)
+    path = str(path_extension_back['path'])
+    print('文件夹路径为' + path)
+    extension = str(path_extension_back['extension'])
     if extension == _check:
-        for item in findAllFile(path):
-            pyopencc(path,extension,opencc_cc)
+        print('未指定文件后缀')
+        for item in findallfile(path):
+            print('正在转换：' + item)
+            data_old = read_data(item)
+            data_new = pyopencc(data_old,opencc_cc)
+            write_data(item,data_new)
+            print('文件：' + item + ' 转换完成！')
     else:
-        for item in findAllFile(path):
+        print('文件后缀为：' + extension)
+        for item in findallfile(path):
             if item.endswith(extension):
-                pyopencc(path,extension,opencc_cc)
+                print('正在转换：' + item)
+                data_old = read_data(item)
+                data_new = pyopencc(data_old,opencc_cc)
+                write_data(item,data_new)
+                print('文件：' + item + ' 转换完成！')
 
 path_original = input('请输入需要转换的文件夹路径：')
 print('如果不需要指定文件后缀请直接回车')
@@ -89,4 +103,3 @@ opencc_cc = input('请输入转换的类型')
 
 pyopencc_body(path_original,extension_original,opencc_cc)
 print('全部转换完成！')
-
